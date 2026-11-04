@@ -1,0 +1,147 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened Primitive Helpers
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        (request.auth.token.email == 'junaidpnofficial@gmail.com' && request.auth.token.email_verified == true) ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Validation helper for GameResult
+    function isValidGameResult(data) {
+      return data.keys().hasAll(['id', 'n', 'g', 'gameId', 'v', 't']) &&
+             data.keys().hasOnly(['id', 'n', 'g', 'gameId', 'v', 't', 'detail', 'createdAt']) &&
+             data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
+             data.n is string && data.n.size() > 0 && data.n.size() <= 60 &&
+             data.g is string && data.g.size() > 0 && data.g.size() <= 50 &&
+             data.gameId is string && data.gameId.size() > 0 && data.gameId.size() <= 30 &&
+             data.v is number &&
+             data.t is number &&
+             (!('detail' in data) || (data.detail is string && data.detail.size() <= 200)) &&
+             (!('createdAt' in data) || data.createdAt == request.time);
+    }
+
+    // Validation helper for UserProfile
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['userId', 'name']) &&
+             data.keys().hasOnly(['userId', 'name', 'email', 'updatedAt']) &&
+             data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 60 &&
+             (!('email' in data) || (data.email is string && data.email.size() <= 128)) &&
+             (!('updatedAt' in data) || data.updatedAt == request.time);
+    }
+
+    // Validation helper for PublishedItem
+    function isValidPublishedItem(data) {
+      return data.keys().hasAll(['id', 'authorName', 'type', 'gameId', 'title', 'scoreValue', 'status', 'flagCount', 'createdAt']) &&
+             data.keys().hasOnly(['id', 'authorName', 'type', 'gameId', 'title', 'detail', 'scoreValue', 'challengeSeed', 'status', 'flagCount', 'flagReasons', 'createdAt']) &&
+             data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
+             data.authorName is string && data.authorName.size() > 0 && data.authorName.size() <= 60 &&
+             data.type in ['score', 'challenge', 'card'] &&
+             data.gameId is string && data.gameId.size() > 0 && data.gameId.size() <= 30 &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 80 &&
+             (!('detail' in data) || (data.detail is string && data.detail.size() <= 250)) &&
+             data.scoreValue is number &&
+             (!('challengeSeed' in data) || (data.challengeSeed is string && data.challengeSeed.size() <= 100)) &&
+             data.status in ['active', 'flagged', 'hidden'] &&
+             data.flagCount is number && data.flagCount >= 0 &&
+             (!('flagReasons' in data) || data.flagReasons is list) &&
+             data.createdAt is number;
+    }
+
+    // Arcade Game Results Collection (Scores & Leaderboards)
+    match /game_results/{resultId} {
+      allow read: if true;
+      allow create: if isValidId(resultId) &&
+                       isValidGameResult(incoming()) &&
+                       incoming().id == resultId;
+      allow update, delete: if isValidId(resultId) && isAdmin();
+    }
+
+    // Public Community Published Items (Challenges, Score Cards, Showcases)
+    match /published_items/{itemId} {
+      // Anyone can read active published content; admins can read everything (including flagged/hidden)
+      allow read: if resource.data.status == 'active' || isAdmin();
+
+      // Anyone can publish a new item with clean initial active status and 0 flags
+      allow create: if isValidId(itemId) &&
+                       isValidPublishedItem(incoming()) &&
+                       incoming().id == itemId &&
+                       incoming().status == 'active' &&
+                       incoming().flagCount == 0;
+
+      // Updating: Users can increment flagCount to report inappropriate content; admin has full moderation control
+      allow update: if isValidId(itemId) && (
+        (
+          incoming().id == existing().id &&
+          incoming().authorName == existing().authorName &&
+          incoming().type == existing().type &&
+          incoming().gameId == existing().gameId &&
+          incoming().title == existing().title &&
+          incoming().scoreValue == existing().scoreValue &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().flagCount == existing().flagCount + 1 &&
+          (incoming().status == 'flagged' || incoming().status == existing().status)
+        ) ||
+        isAdmin()
+      );
+
+      // Only the verified admin can delete published items
+      allow delete: if isValidId(itemId) && isAdmin();
+    }
+
+    // User Profiles Collection
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isValidId(userId) &&
+                       isOwner(userId) &&
+                       isValidUserProfile(incoming()) &&
+                       incoming().userId == userId;
+      allow update: if isValidId(userId) &&
+                       isValidUserProfile(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       (isOwner(userId) || isAdmin());
+      allow delete: if isValidId(userId) && (isOwner(userId) || isAdmin());
+    }
+
+    // Admins Collection
+    match /admins/{adminUid} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Connection probe test document
+    match /test/connection {
+      allow read: if true;
+    }
+  }
+}

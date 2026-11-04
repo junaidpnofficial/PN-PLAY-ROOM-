@@ -1,0 +1,157 @@
+{
+  "entities": {
+    "GameResult": {
+      "title": "GameResult",
+      "description": "Records individual completed game session scores and outcomes",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the game record",
+          "maxLength": 128
+        },
+        "n": {
+          "type": "string",
+          "description": "Player name who achieved the score",
+          "maxLength": 60
+        },
+        "g": {
+          "type": "string",
+          "description": "Display name of the game played",
+          "maxLength": 50
+        },
+        "gameId": {
+          "type": "string",
+          "description": "Unique internal key of the game",
+          "maxLength": 30
+        },
+        "v": {
+          "type": "number",
+          "description": "Numerical score or duration in seconds"
+        },
+        "t": {
+          "type": "number",
+          "description": "Client timestamp of the completed game"
+        },
+        "detail": {
+          "type": "string",
+          "description": "Optional textual details or achievement notes",
+          "maxLength": 200
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of record creation"
+        }
+      },
+      "required": ["id", "n", "g", "gameId", "v", "t"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Stores user player profile and customizable names",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Authentication User UID",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "description": "Primary player nickname",
+          "maxLength": 60
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address if authenticated",
+          "maxLength": 128
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of last profile update"
+        }
+      },
+      "required": ["userId", "name"]
+    },
+    "PublishedItem": {
+      "title": "PublishedItem",
+      "description": "User-published game challenges, high score showcases, and shareable cards",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the published item",
+          "maxLength": 128
+        },
+        "authorName": {
+          "type": "string",
+          "description": "Name of the player who published the content",
+          "maxLength": 60
+        },
+        "type": {
+          "type": "string",
+          "enum": ["score", "challenge", "card"],
+          "description": "Type of published content"
+        },
+        "gameId": {
+          "type": "string",
+          "description": "Game identifier for the challenge or score",
+          "maxLength": 30
+        },
+        "title": {
+          "type": "string",
+          "description": "Public headline or challenge title",
+          "maxLength": 80
+        },
+        "detail": {
+          "type": "string",
+          "description": "Description or message accompanying the publication",
+          "maxLength": 250
+        },
+        "scoreValue": {
+          "type": "number",
+          "description": "Target score or benchmark value"
+        },
+        "challengeSeed": {
+          "type": "string",
+          "description": "Optional puzzle configuration seed or level parameter",
+          "maxLength": 100
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "flagged", "hidden"],
+          "description": "Moderation status of the content"
+        },
+        "flagCount": {
+          "type": "number",
+          "description": "Number of community moderation reports"
+        },
+        "flagReasons": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Optional logged reasons for moderation flags"
+        },
+        "createdAt": {
+          "type": "number",
+          "description": "Creation timestamp in milliseconds"
+        }
+      },
+      "required": ["id", "authorName", "type", "gameId", "title", "scoreValue", "status", "flagCount", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/game_results/{resultId}": {
+      "schema": "GameResult",
+      "description": "Public arcade score records and leaderboard entries"
+    },
+    "/published_items/{itemId}": {
+      "schema": "PublishedItem",
+      "description": "Public shared challenges, score cards, and player showcases with moderation status"
+    },
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Private user profile and player preferences"
+    }
+  }
+}

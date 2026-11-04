@@ -1,0 +1,65 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --ink: #0f172a;
+    --mute: #64748b;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --accent-light: #eff6ff;
+    --line: #e2e8f0;
+  }
+
+  .dark {
+    --bg: #090d16;
+    --card: #131b2e;
+    --ink: #ffffff;
+    --mute: #94a3b8;
+    --accent: #3b82f6;
+    --accent-hover: #60a5fa;
+    --accent-light: #172554;
+    --line: #1e293b;
+  }
+}
+
+.font-display {
+  font-family: 'Bricolage Grotesque', 'Figtree', sans-serif;
+}
+
+.font-body {
+  font-family: 'Figtree', sans-serif;
+}
+
+.font-mono-nums {
+  font-family: 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Two-color vibrant title: Child-attracting bright blue */
+.title-gradient {
+  color: #2563eb;
+  display: inline-block;
+}
+
+.dark .title-gradient {
+  color: #3b82f6;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(37, 99, 235, 0.2);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(37, 99, 235, 0.4);
+}

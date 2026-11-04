@@ -1,0 +1,6 @@
+{
+  "name": "Play Room - Mini Games & Puzzle Suite",
+  "description": "An all-in-one arcade of 9 instant puzzle and strategy games featuring Memory Match, Tic-Tac-Toe, SOS, Sudoku, Shikaku, Murder by Numbers, 2048, Hangman, and Whack-a-Mole with leaderboards, confidential admin access, and clean two-color design.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
